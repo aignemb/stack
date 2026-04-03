@@ -3,9 +3,11 @@ package main
 import (
 	"fmt"
 	"os"
+	"runtime/debug"
 	"encoding/json"
 	"time"
 	"strconv"
+	"path/filepath"
 	//"stack2/jsont"
 
 	tea "charm.land/bubbletea/v2"
@@ -69,6 +71,15 @@ const (
 )
 
 // funcs
+
+func getRoot() string {
+	path, err := os.Executable()
+	if err != nil {
+		return "."
+	}
+	return filepath.Dir(path)
+}
+
 func loadModel() (model) {
 	m := model{
 		f: Flags{false},
@@ -87,21 +98,23 @@ func loadModel() (model) {
 		msgs: []string{},
 	}
 
-	data, err := os.ReadFile(string(stackFile))
+	root := getRoot()
+	m.msgs = append(m.msgs, filepath.Join(root, string(stackFile)))
+	data, err := os.ReadFile(filepath.Join(root, string(stackFile)))
 	if err != nil {
 		//statusMsg = fmt.Sprintf("Error reading stack, please review stackFile %s\nError: %v", stackFile, err)
 		fmt.Printf("Error reading stack, please review stackFile %s\nError: %v", stackFile, err)
 	}
 	json.Unmarshal(data, &m.stack)
 
-	data, err = os.ReadFile(string(heapFile))
+	data, err = os.ReadFile(filepath.Join(root, string(heapFile)))
 	if err != nil {
 		//statusMsg = fmt.Sprintf("Error reading heap, please review heapFile %s\nError: %v", heapFile, err)
 		fmt.Printf("Error reading heap, please review heapFile %s\nError: %v", heapFile, err)
 	}
 	json.Unmarshal(data, &m.heap)
 
-	data, err = os.ReadFile(string(archiveFile))
+	data, err = os.ReadFile(filepath.Join(root, string(archiveFile)))
 	if err != nil {
 		//statusMsg = fmt.Sprintf("Error reading archive, please review archiveFile %s\nError: %v", archiveFile, err)
 		fmt.Printf("Error reading archive, please review archiveFile %s\nError: %v", archiveFile, err)
@@ -118,26 +131,28 @@ func loadModel() (model) {
 }
 
 func (m model) store() {
+	root := getRoot()
+
 	data, err := json.MarshalIndent(m.stack, "", "  ")
 	if err != nil {
 		//statusMsg = fmt.Sprintf("Error storing stack\nError: %v", err)
 		fmt.Printf("Error storing stack\nError: %v", err)
 	}
-	os.WriteFile(string(stackFile), data, 0644)
+	os.WriteFile(filepath.Join(root, string(stackFile)), data, 0644)
 
 	data, err = json.MarshalIndent(m.heap, "", "  ")
 	if err != nil {
 		//statusMsg = fmt.Sprintf("Error storing heap\nError: %v", err)
 		fmt.Printf("Error storing heap\nError: %v", err)
 	}
-	os.WriteFile(string(heapFile), data, 0644)
+	os.WriteFile(filepath.Join(root, string(heapFile)), data, 0644)
 
 	data, err = json.MarshalIndent(m.archive, "", "  ")
 	if err != nil {
 		//statusMsg = fmt.Sprintf("Error storing archive\nError: %v", err)
 		fmt.Printf("Error storing archive\nError: %v", err)
 	}
-	os.WriteFile(string(archiveFile), data, 0644)
+	os.WriteFile(filepath.Join(root, string(archiveFile)), data, 0644)
 }
 
 func (t task) display() string {
@@ -157,8 +172,12 @@ func assert(condition bool, msg string, msgStack []string) {
 }
 
 func insert(l []task, i int, t task) []task {
-	l = append(l[:i+1], l[i:]...)
-	l[i] = t
+	if len(l) == 0 {
+		l = append(l, t)
+	} else {
+		l = append(l[:i+1], l[i:]...)
+		l[i] = t
+	}
 	return l
 }
 
@@ -513,6 +532,7 @@ func (m model) View() tea.View{
 
 	//s += fmt.Sprintf("\n----------\nCursor Details\nStack: %d\nHeap: %d\nArchive: %d\n----------\n", m.cursor[stackView], m.cursor[heapView], m.cursor[archiveView])
 
+	s += "\n"
 	for i, msg := range m.msgs {
 		s += fmt.Sprintf("%d. %s\n", i + 1,  msg)
 	}
@@ -527,13 +547,14 @@ func main() {
     defer func() {
         if r := recover(); r != nil {
             p.ReleaseTerminal()
-            fmt.Printf("panic: %v\n", r)
+            fmt.Printf("panic: %+v\n", r)
         }
     }()
 
     if _, err := p.Run(); err != nil {
         p.ReleaseTerminal()
-        fmt.Printf("there has been an error: %v", err)
+        fmt.Printf("there has been an error: %+v", err)
+		debug.PrintStack()
     }
 }
 
