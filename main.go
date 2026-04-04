@@ -536,7 +536,7 @@ func (m model) View() tea.View{
 			}
 		}
 	case teditView:
-		s += fmt.Sprintf("task: %s\n\npriority:%s\n", m.inputs.titleField.View(), m.inputs.priorityField.View())
+		s += fmt.Sprintf("task: %s\n\npriority: %s\n", m.inputs.titleField.View(), m.inputs.priorityField.View())
 	}
 
 	//s += fmt.Sprintf("\n----------\nCursor Details\nStack: %d\nHeap: %d\nArchive: %d\n----------\n", m.cursor[stackView], m.cursor[heapView], m.cursor[archiveView])
