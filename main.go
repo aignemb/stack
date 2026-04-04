@@ -99,7 +99,7 @@ func loadModel() (model) {
 	}
 
 	root := getRoot()
-	m.msgs = append(m.msgs, filepath.Join(root, string(stackFile)))
+	//m.msgs = append(m.msgs, filepath.Join(root, string(stackFile)))
 	data, err := os.ReadFile(filepath.Join(root, string(stackFile)))
 	if err != nil {
 		//statusMsg = fmt.Sprintf("Error reading stack, please review stackFile %s\nError: %v", stackFile, err)
@@ -130,29 +130,40 @@ func loadModel() (model) {
 	return m
 }
 
-func (m model) store() {
+func (m model) store() []string {
 	root := getRoot()
+	var msgs []string
 
 	data, err := json.MarshalIndent(m.stack, "", "  ")
 	if err != nil {
 		//statusMsg = fmt.Sprintf("Error storing stack\nError: %v", err)
-		fmt.Printf("Error storing stack\nError: %v", err)
+		msgs = append(msgs, fmt.Sprintf("Error marshalling stack\nError: %v", err))
 	}
-	os.WriteFile(filepath.Join(root, string(stackFile)), data, 0644)
+	err = os.WriteFile(filepath.Join(root, string(stackFile)), data, 0644)
+	if err != nil {
+		msgs = append(msgs, fmt.Sprintf("Error storing stack\nError: %v", err))
+	}
 
 	data, err = json.MarshalIndent(m.heap, "", "  ")
 	if err != nil {
 		//statusMsg = fmt.Sprintf("Error storing heap\nError: %v", err)
-		fmt.Printf("Error storing heap\nError: %v", err)
+		msgs = append(msgs, fmt.Sprintf("Error storing heap\nError: %v", err))
 	}
-	os.WriteFile(filepath.Join(root, string(heapFile)), data, 0644)
+	err = os.WriteFile(filepath.Join(root, string(heapFile)), data, 0644)
+	if err != nil {
+		msgs = append(msgs, fmt.Sprintf("Error storing heap\nError: %v", err))
+	}
 
 	data, err = json.MarshalIndent(m.archive, "", "  ")
 	if err != nil {
 		//statusMsg = fmt.Sprintf("Error storing archive\nError: %v", err)
 		fmt.Printf("Error storing archive\nError: %v", err)
 	}
-	os.WriteFile(filepath.Join(root, string(archiveFile)), data, 0644)
+	err = os.WriteFile(filepath.Join(root, string(archiveFile)), data, 0644)
+	if err != nil {
+		msgs = append(msgs, fmt.Sprintf("Error storing archive\nError: %v", err))
+	}
+	return msgs
 }
 
 func (t task) display() string {
@@ -201,7 +212,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.view == teditView {
 			switch msg.String() {
 			case "ctrl+c","q":
-				m.store()
+				m.msgs = append(m.msgs, m.store()...)
 				return m, tea.Quit
 			case "tab":
 				if m.inputs.titleField.Focused() {
@@ -257,7 +268,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				case archiveView:
 					m.archive = insert(m.archive, m.cursor[archiveView], t)
 				}
-			m.store()
+			m.msgs = append(m.msgs, m.store()...)
 		}
 
 		var taskCmd, priorityCmd tea.Cmd
@@ -269,7 +280,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		switch msg.String() {
 		case "ctrl+c","q":
-			m.store()
+			m.msgs = append(m.msgs, m.store()...)
 			return m, tea.Quit
 
 		case "d":
@@ -291,7 +302,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						m.cursor[archiveView] --
 					}
 				}
-				m.store()
+				m.msgs = append(m.msgs, m.store()...)
 			} else {
 				m.prefix.value = "d"
 				m.prefix.wasSet = true
@@ -371,7 +382,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.cursor[archiveView] ++
 				}
 			}
-			m.store()
+			m.msgs = append(m.msgs, m.store()...)
 
 		case "k":
 			switch m.view {
@@ -410,14 +421,13 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.cursor[archiveView] --
 				}
 			}
-			m.store()
+			m.msgs = append(m.msgs, m.store()...)
 
 		case "p":
 			if m.view == stackView {
 				m.heap = insert(m.heap, 0, m.stack[m.cursor[stackView]])
 				m.stack = remove(m.stack, m.cursor[stackView])
 				if m.cursor[stackView] >= len(m.stack) && len(m.stack) > 0{
-					m.msgs = append(m.msgs, "reached here")
 					m.cursor[stackView] --
 				}
 			} else if m.view == heapView{
@@ -427,7 +437,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.cursor[heapView] --
 				}
 			}
-			m.store()
+			m.msgs = append(m.msgs, m.store()...)
 		case "z":
 			if m.view == stackView {
 				m.archive = insert(m.archive, 0, m.stack[m.cursor[stackView]])
@@ -448,10 +458,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.cursor[archiveView] --
 				}
 			}
-			m.store()
+			m.msgs = append(m.msgs, m.store()...)
 		}
 	}
-	//m.store() -> should be whenever there is a change
 }
 return m, nil
 }
