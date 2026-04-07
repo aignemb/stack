@@ -192,6 +192,12 @@ func insert(l []task, i int, t task) []task {
 	return l
 }
 
+func edit(l []task, i int, t task) []task {
+	l[i].Title = t.Title
+	l[i].Priority = t.Priority
+	return l
+}
+
 func remove(l []task, i int) []task {
 	l = append(l[:i], l[i+1:]...)
 	return l
@@ -260,13 +266,24 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				t.Title = m.inputs.titleField.Value()
 				t.Priority = Priority(n)
 
-				switch m.view {
-				case stackView:
-					m.stack = insert(m.stack, m.cursor[stackView], t)
-				case heapView:
-					m.heap = insert(m.heap, m.cursor[heapView], t)
-				case archiveView:
-					m.archive = insert(m.archive, m.cursor[archiveView], t)
+				if m.f.n {
+					switch m.view {
+					case stackView:
+						m.stack = insert(m.stack, m.cursor[stackView], t)
+					case heapView:
+						m.heap = insert(m.heap, m.cursor[heapView], t)
+					case archiveView:
+						m.archive = insert(m.archive, m.cursor[archiveView], t)
+					}
+				} else {
+					switch m.view {
+					case stackView:
+						m.stack = edit(m.stack, m.cursor[stackView], t)
+					case heapView:
+						m.heap = edit(m.heap, m.cursor[heapView], t)
+					case archiveView:
+						m.archive = edit(m.archive, m.cursor[archiveView], t)
+					}
 				}
 			m.msgs = append(m.msgs, m.store()...)
 		}
