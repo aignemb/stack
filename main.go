@@ -8,12 +8,10 @@ import (
 	"time"
 	"strconv"
 	"path/filepath"
-	//"stack2/jsont"
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/bubbles/v2/textinput"
 	"charm.land/lipgloss/v2"
-	//"charm.land/bubbles/v2/cursor"
 )
 
 //types
@@ -78,6 +76,24 @@ func getRoot() string {
 		return "."
 	}
 	return filepath.Dir(path)
+}
+
+func ensureData() error {
+	err := os.MkdirAll(filepath.Join(getRoot(), "data"), 0755)
+	if err != nil {
+		return err
+	}
+
+	files := []File{stackFile, heapFile, archiveFile}
+	for _, f := range files {
+		if _, err := os.Stat(string(f)); os.IsNotExist(err) {
+			err := os.WriteFile(string(f), []byte("[]"), 0644)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 func loadModel() (model) {
@@ -568,6 +584,9 @@ func (m model) View() tea.View{
 }
 
 func main() {
+	if err := ensureData(); err != nil {
+		fmt.Printf("failed to initialize data files: %v", err)
+	}
 	p := tea.NewProgram(loadModel())
 
     defer func() {
