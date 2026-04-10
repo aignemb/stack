@@ -351,8 +351,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.view = archiveView
 
 		case "n":
+			m.f.n = true
 			if m.view == stackView || m.view == heapView {
-				m.f.n = true
 				m.inputs.titleField.SetValue("")
 				m.inputs.priorityField.SetValue("")
 				m.lastView = m.view
@@ -361,6 +361,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 
 		case "e":
+			m.f.n = false
 			switch m.view {
 			case stackView:
 				m.inputs.titleField.SetValue(m.stack[m.cursor[stackView]].Title)
