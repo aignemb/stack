@@ -1,4 +1,5 @@
 package main
+// TODO need to stop q from acting as quit during typing
 
 import (
 	"fmt"
