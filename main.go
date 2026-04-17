@@ -234,7 +234,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		if m.view == teditView {
 			switch msg.String() {
-			case "ctrl+c","q":
+			case "ctrl+c":
 				m.msgs = append(m.msgs, m.store()...)
 				return m, tea.Quit
 			case "tab":
